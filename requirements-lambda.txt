@@ -1,0 +1,11 @@
+fastapi
+mangum
+boto3
+python-multipart
+python-dotenv
+openai
+psycopg2-binary
+sqlalchemy
+python-jose[cryptography]
+requests
+jwt
