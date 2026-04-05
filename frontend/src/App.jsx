@@ -58,6 +58,8 @@ function App() {
     } else if (auth.isAuthenticated && window.location.pathname === '/auth/callback') {
       // User successfully signed in via callback - clear the flag if it exists
       sessionStorage.removeItem('oidc.force_logout')
+      // Redirect to home page to clean up the URL
+      window.history.replaceState({}, document.title, '/')
     }
   }, [auth.isAuthenticated, auth])
 
@@ -94,43 +96,34 @@ function App() {
         console.log('Code:', code.substring(0, 20) + '...')
         console.log('State:', state)
         
-        // react-oidc-context should automatically process this
-        // But if it doesn't after a delay, there might be an issue
-        // The state parameter being null might cause issues with PKCE validation
-        const timeout = setTimeout(async () => {
-          if (!auth.isLoading && !auth.isAuthenticated && !auth.error) {
-            console.warn('⚠️ Callback not processed after delay.')
-            console.log('Authorization code is present but not being processed.')
-            console.log('State parameter is null - this might be the issue.')
-            console.log('Current auth state:', {
-              isLoading: auth.isLoading,
-              isAuthenticated: auth.isAuthenticated,
-              error: auth.error,
-              user: auth.user
-            })
-            
-            // Try to manually process the callback if the library didn't
-            // This is a fallback - the library should handle it automatically
-            try {
-              console.log('Attempting to manually process callback...')
-              // The library should have processed this, but if it didn't,
-              // we might need to check if there's a stored state mismatch
-              // Check sessionStorage for PKCE code verifier
-              const storedState = sessionStorage.getItem('oidc.state')
-              console.log('Stored state in sessionStorage:', storedState)
-              
-              if (!storedState && state === null) {
-                console.warn('⚠️ No state parameter and no stored state found.')
-                console.warn('This might cause PKCE validation to fail.')
-                console.warn('The callback might not be processable without the original state.')
-              }
-            } catch (err) {
-              console.error('Error checking callback state:', err)
-            }
+        // Wait for authentication to complete, then redirect
+        // This prevents the "jump back to login" issue
+        const checkAuth = setInterval(() => {
+          if (auth.isAuthenticated && auth.user) {
+            console.log('✅ Authentication complete, redirecting to home...')
+            clearInterval(checkAuth)
+            // Small delay to ensure state is fully updated
+            setTimeout(() => {
+              window.history.replaceState({}, document.title, '/')
+            }, 100)
+          } else if (auth.error) {
+            console.error('❌ Authentication error:', auth.error)
+            clearInterval(checkAuth)
           }
-        }, 5000) // Increased timeout to 5 seconds
+        }, 100) // Check every 100ms
         
-        return () => clearTimeout(timeout)
+        // Cleanup after 10 seconds
+        const timeout = setTimeout(() => {
+          clearInterval(checkAuth)
+          if (!auth.isAuthenticated && !auth.error) {
+            console.warn('⚠️ Callback processing taking longer than expected')
+          }
+        }, 10000)
+        
+        return () => {
+          clearInterval(checkAuth)
+          clearTimeout(timeout)
+        }
       } else {
         console.warn('⚠️ No authorization code found in callback URL')
         console.log('This might be a verification redirect or error redirect')

@@ -12,6 +12,8 @@ S3_BUCKET = os.getenv('TEXTRACT_S3_BUCKET', 'your-textract-bucket')
 SNS_TOPIC_ARN = os.getenv('TEXTRACT_SNS_TOPIC_ARN', 'arn:aws:sns:region:account:topic-name')
 SQS_QUEUE_URL = os.getenv('TEXTRACT_SQS_QUEUE_URL', 'https://sqs.region.amazonaws.com/account/queue-name')
 TEXTRACT_ROLE_ARN = os.getenv('TEXTRACT_ROLE_ARN', 'arn:aws:iam::account:role/textract-role')
+# Optional: when set, POST /upload_syllabus enqueues work here and returns 202 (run syllabus_worker.py or Lambda)
+SYLLABUS_PROCESSING_QUEUE_URL = os.getenv('SYLLABUS_PROCESSING_QUEUE_URL', '').strip()
 
 # AWS Clients
 textract = boto3.client('textract', region_name=AWS_REGION)

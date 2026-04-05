@@ -1,0 +1,49 @@
+flowchart LR
+    subgraph Client["Browser / User"]
+        U[User www.simpleaiplanner.com]
+    end
+
+    subgraph Cloudflare["Cloudflare DNS CDN Security"]
+        CF[Cloudflare Proxy]
+    end
+
+    subgraph Frontend["Static Frontend"]
+        CFDIST[CloudFront CDN]
+        S3[S3 Bucket Vite Build]
+    end
+
+    subgraph Auth["Authentication"]
+        COG[Cognito User Pool Hosted UI Google IdP]
+    end
+
+    subgraph Backend["Backend API"]
+        APIGW[API Gateway HTTP API api.simpleaiplanner.com]
+        LAMBDA[Lambda FastAPI Mangum]
+    end
+
+    subgraph Data["Data and External Services"]
+        RDS[(PostgreSQL RDS)]
+        S3DOCS[(S3 Bucket Uploaded Syllabi)]
+        OPENAI[OpenAI API Syllabus Parsing]
+    end
+
+    U -->|HTTPS| CF
+
+    CF -->|Static assets| CFDIST
+    CFDIST --> S3
+
+    U -->|Sign in Sign out| CF
+    CF -->|oauth2 authorize| COG
+    COG -->|Redirect with code| CF
+    CF -->|auth callback| CFDIST
+
+    U -->|XHR api v1 with ID Token| CF
+    CF -->|api.simpleaiplanner.com| APIGW
+    APIGW --> LAMBDA
+
+    LAMBDA -->|SQLAlchemy queries| RDS
+    LAMBDA -->|Upload Download files| S3DOCS
+    LAMBDA -->|Send syllabus text| OPENAI
+
+    OPENAI -->|Parsed JSON course assignments reminders| LAMBDA
+    LAMBDA -->|Create PlannerItem rows| RDS

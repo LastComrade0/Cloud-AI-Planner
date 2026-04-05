@@ -33,15 +33,42 @@ api.interceptors.request.use(async (config) => {
   return config
 })
 
+const pollSyllabusJob = async (jobId, intervalMs = 2000, maxAttempts = 150) => {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const r = await api.get(`/api/v1/syllabus_jobs/${jobId}`)
+    const status = r.data.status
+    if (status === 'completed') {
+      return {
+        message: r.data.message || 'Syllabus processed and saved',
+        document_id: r.data.document_id,
+        extraction: null,
+        parsed: null,
+      }
+    }
+    if (status === 'failed') {
+      const detail = r.data.error_message || 'Processing failed'
+      throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail))
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs))
+  }
+  throw new Error('Syllabus processing timed out. Try again later.')
+}
+
 export const uploadSyllabus = async (file) => {
   const formData = new FormData()
   formData.append('file', file)
-  
+
   const response = await api.post('/api/v1/upload_syllabus', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+    validateStatus: (s) => (s >= 200 && s < 300) || s === 202,
   })
+
+  if (response.status === 202 && response.data?.job_id) {
+    return pollSyllabusJob(response.data.job_id)
+  }
+
   return response.data
 }
 

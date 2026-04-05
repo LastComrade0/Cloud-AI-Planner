@@ -43,19 +43,19 @@ zip -r layer.zip python -q
 
 # Check size
 if [ -f "layer.zip" ]; then
-    SIZE=$(du -h layer.zip | cut -f1)
+SIZE=$(du -h layer.zip | cut -f1)
     FILE_COUNT=$(unzip -l layer.zip | tail -1 | awk '{print $2}')
-    echo ""
-    echo "✅ Layer created successfully!"
-    echo "File: layer.zip"
-    echo "Size: $SIZE"
+echo ""
+echo "✅ Layer created successfully!"
+echo "File: layer.zip"
+echo "Size: $SIZE"
     echo "Files: $FILE_COUNT"
-    echo ""
-    echo "Next steps:"
-    echo "1. Download layer.zip (Actions → Download file)"
-    echo "2. Go to Lambda Console → Layers → Create layer"
-    echo "3. Upload layer.zip"
-    echo "4. Attach layer to your Lambda function"
+echo ""
+echo "Next steps:"
+echo "1. Download layer.zip (Actions → Download file)"
+echo "2. Go to Lambda Console → Layers → Create layer"
+echo "3. Upload layer.zip"
+echo "4. Attach layer to your Lambda function"
 else
     echo "❌ ERROR: layer.zip was not created!"
     exit 1

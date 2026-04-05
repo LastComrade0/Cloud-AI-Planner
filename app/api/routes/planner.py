@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.dependencies.db import get_db
 from app.dependencies.auth import get_current_user
-from app.models.db_models import PlannerItem, Course, User
+from app.models.db_models import PlannerItem, Course, User, Document
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/v1", tags=["planner"])
@@ -142,8 +142,20 @@ def purge_planner(
     user: User = Depends(get_current_user),
 ):
     """
-    Delete all planner items for the current user.
-    Does not affect courses/documents, only planner entries.
+    Delete all planner items, documents, and courses for the current user.
+    This provides a complete reset, allowing re-upload of the same syllabus files.
     """
-    db.query(PlannerItem).filter(PlannerItem.user_id == user.id).delete()
+    # Delete in order to respect foreign key constraints:
+    # 1. PlannerItems (reference courses and documents)
+    planner_items_deleted = db.query(PlannerItem).filter(PlannerItem.user_id == user.id).delete()
+    
+    # 2. Documents (reference users)
+    documents_deleted = db.query(Document).filter(Document.user_id == user.id).delete()
+    
+    # 3. Courses (reference users)
+    courses_deleted = db.query(Course).filter(Course.user_id == user.id).delete()
+    
     db.commit()
+    
+    # Log the purge for debugging
+    print(f"🧹 Purged user {user.id}: {planner_items_deleted} planner items, {documents_deleted} documents, {courses_deleted} courses")

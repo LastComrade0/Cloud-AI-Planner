@@ -19,6 +19,13 @@ def parse_syllabus_with_openai(text: str) -> ParsedSyllabus:
     2. Assignments: name, due date, weight/percentage, description
     3. Reminders: important dates, deadlines, exam dates, etc.
 
+    IMPORTANT DATE FORMATTING RULES:
+    - Dates MUST be in ISO format: YYYY-MM-DD (e.g., "2025-10-15")
+    - If a date is not available or cannot be determined, use null (NOT a description like "Final Deliverables")
+    - If you see text like "Final Deliverables", "Week of...", or date ranges, use null for the date field
+    - Only extract actual calendar dates in YYYY-MM-DD format
+    - If the year is not specified, infer it from the course year/semester context
+
     Return the data as a JSON object matching this structure:
     {
         "course": {
